@@ -1059,10 +1059,6 @@ func structMappings(cfg *Config) []shared.EnvBinding {
 			EnvVars:     []string{"OCIS_URL", "STORAGE_USERPROVIDER_OWNCLOUDSQL_IDP"},
 			Destination: &cfg.Reva.UserOwnCloudSQL.Idp,
 		},
-		{
-			EnvVars:     []string{"STORAGE_DEBUG_ADDR"},
-			Destination: &cfg.Debug.Addr,
-		},
 
 		// debug
 
