@@ -49,7 +49,7 @@ func Server(cfg *config.Config) *cli.Command {
 
 			defer cancel()
 
-			mtrcs.BuildInfo.WithLabelValues(cfg.Server.Version).Set(1)
+			mtrcs.BuildInfo.WithLabelValues(cfg.Service.Version).Set(1)
 
 			handler, err := svc.New(svc.Logger(logger), svc.Config(cfg))
 			if err != nil {
@@ -60,7 +60,7 @@ func Server(cfg *config.Config) *cli.Command {
 			httpServer := http.Server(
 				http.Config(cfg),
 				http.Logger(logger),
-				http.Name(cfg.Server.Name),
+				http.Name(cfg.Service.Name),
 				http.Context(ctx),
 				http.Metrics(mtrcs),
 				http.Handler(handler),
@@ -74,7 +74,7 @@ func Server(cfg *config.Config) *cli.Command {
 			grpcServer := grpc.Server(
 				grpc.Config(cfg),
 				grpc.Logger(logger),
-				grpc.Name(cfg.Server.Name),
+				grpc.Name(cfg.Service.Name),
 				grpc.Context(ctx),
 				grpc.Metrics(mtrcs),
 				grpc.Handler(handler),
