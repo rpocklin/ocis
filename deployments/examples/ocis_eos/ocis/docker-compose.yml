@@ -1,0 +1,245 @@
+---
+version: '3.5'
+
+networks:
+  testnet:
+    name: testnet
+
+services:
+  ocis:
+    container_name: ocis
+    image: owncloud/eos-ocis:1.15.0
+    tty: true
+    privileged: true
+    stdin_open: true
+    ports:
+      - 9200:9200
+    env_file:
+      - ./config/eos-docker.env
+    hostname: ocis
+    networks:
+      - testnet
+    volumes:
+      - .:/ocis
+      - ../accounts:/accounts
+      - ../glauth:/glauth
+      - ../idp:/idp
+      - ../web:/web
+      - ../ocis-pkg:/ocis-pkg
+      - ../ocs:/ocs
+      - ../proxy:/proxy
+      - ../settings:/settings
+      - ../store:/store
+      - ../thumbnails:/thumbnails
+      - ../webdav:/webdav
+      - ../storage:/storage
+    environment:
+      # ocis log level will be used for all services
+      OCIS_LOG_LEVEL: debug
+      # domain setup
+      # TODO currently the below lines hardcode the port to 9200, use an OCIS_URL that includes protocol and port
+      OCIS_URL: https://${OCIS_DOMAIN:-localhost:9200}
+      # TODO make id the default in ocis-storage
+      # or use STORAGE_DRIVER_EOS_LAYOUT="dockertest/{{.Username}}"
+      STORAGE_DRIVER_EOS_ENABLE_HOME: "true"
+      # STORAGE_DRIVER_EOS_LAYOUT: "dockertest/{{.Username}}"
+      STORAGE_DRIVER_EOS_LAYOUT: "{{substr 0 1 .Id.OpaqueId}}/{{.Id.OpaqueId}}"
+      # added from https://owncloud.dev/ocis/storage-backends/eos/#how-do-i-update-a-service-in-the-ocis-container
+      STORAGE_HOME_DRIVER: "eos" # eoshome
+      STORAGE_USERS_DRIVER: "eos"
+      STORAGE_METADATA_DRIVER: "eos"
+
+      # STORAGE_DRIVER_EOS_NAMESPACE: "/eos"
+      STORAGE_DRIVER_EOS_NAMESPACE: "/eos/dockertest/"
+      STORAGE_METADATA_DRIVER_EOS_NAMESPACE: "/eos/dockertest/reva"
+      STORAGE_USERS_DRIVER_EOS_NAMESPACE: "/eos/dockertest/reva"
+      STORAGE_METADATA_ROOT: "/eos/dockertest/reva/metadata"
+
+      STORAGE_DRIVER_EOS_MASTER_URL: "root://mgm-master.testnet:1094"
+      STORAGE_DRIVER_EOS_SLAVE_URL: "root://mgm-master.testnet:1094"
+
+      ACCOUNTS_SERVICE_USER_USERNAME: "daemon"
+      ACCOUNTS_SERVICE_USER_UID: 2
+      ACCOUNTS_SERVICE_USER_GID: 2
+
+      ## below are needed otherwise it defaults to cern.ch
+      STORAGE_USERS_DRIVER_EOS_MASTER_URL: "root://mgm-master.testnet:1094"
+      STORAGE_USERS_DRIVER_EOS_SLAVE_URL: "root://mgm-master.testnet:1094"
+      STORAGE_METADATA_DRIVER_EOS_MASTER_URL: "root://mgm-master.testnet:1094"
+      STORAGE_METADATA_DRIVER_EOS_SLAVE: "root://mgm-master.testnet:1094"
+
+      EOS_MGM_HOST: "mgm-master.testnet" # custom
+      EOS_MGM_PORT: "1094" # custom
+      EOS_OCIS_HOME: /eos/dockertest/reva # custom
+
+      GLAUTH_LDAP_ADDR: 0.0.0.0:9125
+      # STORAGE_LDAP_HOSTNAME: ocis.testnet
+      # STORAGE_LDAP_PORT: 9125 # was 9126
+      # STORAGE_LDAP_BASE_DN: "dc=ocis,dc=test"
+      # STORAGE_LDAP_BIND_DN: "cn=reva,ou=sysusers,dc=ocis,dc=test"
+      # STORAGE_LDAP_BIND_PASSWORD: "reva"
+
+      # the eos end xrdcopy binaries use this env var to find the eos mgm
+      EOS_MGM_URL: "root://mgm-master.testnet:1094"
+      STORAGE_DRIVER_EOS_MGM_URL: "root://mgm-master.testnet:1094"
+
+      # ignore insecure certificates and allow basic auth
+      PROXY_ENABLE_BASIC_AUTH: "true"
+      OCIS_INSECURE: "true"
+
+
+  mgm-master:
+    container_name: mgm-master
+    image: owncloud/eos-mgm:4.8.26
+    tty: true
+    privileged: true
+    stdin_open: true
+    env_file:
+    - ./config/eos-docker.env
+    hostname: mgm-master.testnet
+    networks:
+    - testnet
+    volumes:
+    - eos-mgm-master-log:/var/log/eos
+    - eos-mgm-master-config:/var/eos/config
+    - eos-mgm-master-ns-queue:/var/eos/ns-queue
+    # this volume kills mgm-master during startup
+    # - ./e/master/var/eos/md:/var/eos/md
+    environment:
+      EOS_SET_MASTER: 1
+
+  mq-master:
+    container_name: mq-master
+    image: owncloud/eos-mq:4.8.26
+    tty: true
+    privileged: true
+    stdin_open: true
+    env_file:
+    - ./config/eos-docker.env
+    hostname: mq-master.testnet
+    networks:
+    - testnet
+    volumes:
+    - eos-mq-master-log:/var/log/eos
+    - eos-mq-master-config:/var/eos/config
+    - eos-mq-master-ns-queue:/var/eos/ns-queue
+    environment:
+      EOS_SET_MASTER: 1
+
+  fst:
+    container_name: fst
+    image: owncloud/eos-fst:4.8.26
+    tty: true
+    privileged: true
+    stdin_open: true
+    env_file:
+    - ./config/eos-docker.env
+    hostname: fst.testnet
+    networks:
+    - testnet
+    volumes:
+    - eos-fst-log:/var/log/eos
+    - eos-fst-disks:/disks
+    environment:
+      EOS_MGM_URL: "root://mgm-master.testnet"
+
+  quark-1:
+    container_name: quark-1
+    image: owncloud/eos-qdb:4.8.26
+    tty: true
+    privileged: true
+    stdin_open: true
+    env_file:
+    - ./config/eos-docker.env
+    hostname: quark-1.testnet
+    networks:
+    - testnet
+    volumes:
+    - eos-quarkdb1:/var/lib/quarkdb
+    environment:
+      EOS_QDB_DIR: "/var/lib/quarkdb/eosns"
+      EOS_QDB_PORT: "7777"
+      EOS_QDB_MODE: "raft"
+      EOS_QDB_CLUSTER_ID: "3d659c1a-e70f-43f0-bed4-941a2ca0765b"
+      EOS_QDB_NODES: "quark-1.testnet:7777,quark-2.testnet:7777,quark-3.testnet:7777"
+
+  quark-2:
+    container_name: quark-2
+    image: owncloud/eos-qdb:4.8.26
+    tty: true
+    privileged: true
+    stdin_open: true
+    env_file:
+    - ./config/eos-docker.env
+    hostname: quark-2.testnet
+    networks:
+    - testnet
+    volumes:
+    - eos-quarkdb2:/var/lib/quarkdb
+    environment:
+      EOS_QDB_DIR: "/var/lib/quarkdb/eosns"
+      EOS_QDB_PORT: "7777"
+      EOS_QDB_MODE: "raft"
+      EOS_QDB_CLUSTER_ID: "3d659c1a-e70f-43f0-bed4-941a2ca0765b"
+      EOS_QDB_NODES: "quark-1.testnet:7777,quark-2.testnet:7777,quark-3.testnet:7777"
+
+  quark-3:
+    container_name: quark-3
+    image: owncloud/eos-qdb:4.8.26
+    tty: true
+    privileged: true
+    stdin_open: true
+    env_file:
+    - ./config/eos-docker.env
+    hostname: quark-3.testnet
+    networks:
+    - testnet
+    volumes:
+    - eos-quarkdb3:/var/lib/quarkdb
+    environment:
+      EOS_QDB_DIR: "/var/lib/quarkdb/eosns"
+      EOS_QDB_PORT: "7777"
+      EOS_QDB_MODE: "raft"
+      EOS_QDB_CLUSTER_ID: "3d659c1a-e70f-43f0-bed4-941a2ca0765b"
+      EOS_QDB_NODES: "quark-1.testnet:7777,quark-2.testnet:7777,quark-3.testnet:7777"
+
+volumes:
+  eos-mgm-master-log:
+  eos-mgm-master-config:
+  eos-mgm-master-ns-queue:
+  eos-mq-master-log:
+  eos-mq-master-config:
+  eos-mq-master-ns-queue:
+  eos-fst-log:
+  eos-fst-disks:
+  eos-quarkdb1:
+  eos-quarkdb2:
+  eos-quarkdb3:
+
+## need to run on eos server
+# docker-compose exec -it ocis /bin/bash
+# eos mkdir -p /eos/dockertest/ocis/metadata
+# eos mkdir -p /eos/dockertest/ocis/users
+# eos mkdir -p /eos/dockertest/ocis/groups
+# /usr/bin/eos mkdir -p /eos/ocis/reva/groups
+# /usr/bin/eos mkdir -p /eos/ocis/reva/users
+# /usr/bin/eos mkdir -p /eos/ocis/reva/metadata
+
+# /usr/bin/eos -r 2 2 file info /eos/ocis/reva/groups
+# /usr/bin/eos -r 2 2 file info /eos/ocis/reva/users
+# /usr/bin/eos -r 2 2 file info /eos/ocis/reva/metadata
+
+
+
+# echo "----- [ocis] eos setup -----"
+# eos -r 0 0 -b vid set membership daemon -uids adm
+# eos -r 0 0 -b vid set membership daemon -gids adm
+# eos -r 0 0 -b vid set membership daemon +sudo
+# eos -r 0 0 -b vid set map -unix "<pwd>" vuid:0 vgid:0
+# # eos -r 0 0 -b vid add gateway ocis.testnet
+# eos -r 0 0 -b vid add gateway ocis
+
+# todo start ocis as daemon not as root
+# eos -r 0 0 -b vid set membership root -uids adm
+# eos -r 0 0 -b vid set membership root -gids adm
+# eos -r 0 0 -b vid set membership root +sudo
