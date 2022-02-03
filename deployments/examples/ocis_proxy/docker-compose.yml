@@ -1,0 +1,69 @@
+---
+version: "3.7"
+
+services:
+  traefik:
+    networks:
+      ocis-net:
+        aliases:
+          - ${OCIS_DOMAIN:-ocis.owncloud.test}
+    depends_on:
+      - proxy
+    extends:
+        file: docker-compose.base.yml
+        service: traefik
+
+  ocis:
+    networks:
+      ocis-net:
+      ocis-int:
+        aliases:
+          - idp.owncloud.test
+          - web.owncloud.test
+          - storage-frontend.owncloud.test
+          - storage-gateway.owncloud.test
+          - ocs.owncloud.test
+          - accounts.owncloud.test
+          - graph.owncloud.test
+          - graph-explorer.owncloud.test
+          - settings.owncloud.test
+          - webdav.owncloud.test
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    environment:
+      # OCIS_RUN_EXTENSIONS: settings,storage-metadata,graph,graph-explorer,ocs,store,thumbnails,web,webdav,storage-frontend,storage-gateway,storage-userprovider,storage-groupprovider,storage-authbasic,storage-authbearer,storage-authmachine,storage-users,storage-shares,storage-public-link,storage-appprovider,storage-sharing,proxy
+      OCIS_COMMAND: server
+      IDP_HTTP_ADDR: 0.0.0.0:9130
+      WEB_HTTP_ADDR: 0.0.0.0:9100
+      OCS_HTTP_ADDR: 0.0.0.0:9110
+      STORAGE_FRONTEND_HTTP_ADDR: 0.0.0.0:9140
+      SETTINGS_HTTP_ADDR: 0.0.0.0:9190
+      ACCOUNTS_HTTP_ADDR: 0.0.0.0:9181
+      WEBDAV_HTTP_ADDR: 0.0.0.0:9115
+      GRAPH_HTTP_ADDR: 0.0.0.0:9120
+      GRAPH_EXPLORER_HTTP_ADDR: 0.0.0.0:9135
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.proxy.entrypoints=https"
+      # maps based on domain from https --> ocis.owncloud.test:9200
+      - "traefik.http.routers.proxy.rule=Host(`${OCIS_DOMAIN:-ocis.owncloud.test}`)"
+      - "traefik.http.routers.proxy.tls.certresolver=http"
+      - "traefik.http.routers.proxy.service=proxy"
+      - "traefik.http.services.proxy.loadbalancer.server.port=9200"
+      # IMPORTANT - otherwise it will bind to "ocis-int" (although it should not be able to)
+      - "traefik.docker.network=${COMPOSE_PROJECT_NAME}_ocis-net"
+
+volumes:
+  certs:
+  ocis-data:
+
+networks:
+  ocis-net:
+    ipam:
+      config:
+        - subnet: 172.177.0.0/16
+  ocis-int:
+    ipam:
+      config:
+        - subnet: 10.103.0.1/16
