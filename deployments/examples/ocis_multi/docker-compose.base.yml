@@ -45,14 +45,14 @@ services:
   ocis:
     image: owncloud/ocis:${OCIS_DOCKER_TAG:-latest}
     networks:
-      ocis-net:
+      ocis-int:
     # entrypoint:
     #   - /bin/sh
     #   - /entrypoint-override.sh
     environment:
       # OCIS_COMMAND: server
       OCIS_URL: https://${OCIS_DOMAIN:-ocis.owncloud.test}
-      OCIS_LOG_LEVEL: ${OCIS_LOG_LEVEL:-error} # make oCIS less verbose
+      OCIS_LOG_LEVEL: ${OCIS_LOG_LEVEL:-debug} # make oCIS less verbose
       PROXY_TLS: "false" # do not use SSL between Traefik and oCIS
       # change default secrets
       IDP_LDAP_BIND_PASSWORD: ${IDP_LDAP_BIND_PASSWORD:-idp}
@@ -63,6 +63,9 @@ services:
       # INSECURE: needed if oCIS / Traefik is using self generated certificates
       OCIS_INSECURE: "${INSECURE:-false}"
     volumes:
+      - ./config/ocis/config.json:/config.json
+      - ./config/ocis/proxy.json:/etc/ocis/proxy.json
+      #/etc/ocis/proxy.json
       - ./wait-for-it.sh:/wait-for-it.sh
       - ./config/ocis/entrypoint-override.wait.sh:/entrypoint-override.wait.sh
       - ./config/ocis/entrypoint-override.sh:/entrypoint-override.sh
@@ -70,6 +73,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.ocis.entrypoints=https"
+      # maps based on domain from https --> ocis.owncloud.test:9200
       - "traefik.http.routers.ocis.rule=Host(`${OCIS_DOMAIN:-ocis.owncloud.test}`)"
       - "traefik.http.routers.ocis.tls.certresolver=http"
       - "traefik.http.routers.ocis.service=ocis"
@@ -81,3 +85,6 @@ services:
 volumes:
   certs:
   ocis-data:
+
+
+# test http://proxy-ext.owncloud.test:9200/.well-known/openid-configuration

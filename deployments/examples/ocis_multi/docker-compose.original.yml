@@ -76,44 +76,6 @@ services:
       driver: "local"
     restart: always
 
-    proxy:
-    glauth:
-    idp:
-    ocs:
-      settings:
-      # requires access to glauth and accounts
-      storage-frontend:
-      storage-gateway:
-      storage-userprovider:
-      storage-auth-basic:
-      storage-auth-bearer:
-      storage-home:
-      storage-users:
-      storage-metadata:
-        storage-public-link:
-
-      store:
-      thumbnails:
-      web:
-      webdav:
-      # proxy: # needed?
-
-
-    # accounts:
-    #   build: database_admin/
-    #   depends_on:
-    #     - db
-
-# mysql:
-#     extends:
-#         file: docker-compose.base.yml
-#         service: mysql
-#     ports:
-#      - "${DB_PORT}:3306"
-#     environment:
-#       MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASS}"
-
-
 volumes:
   certs:
   ocis-data:

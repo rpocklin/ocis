@@ -1,0 +1,99 @@
+{
+    "log": {
+      "level": "debug",
+      "pretty": true,
+      "color": true
+    },
+    "HTTP": {
+      "Namespace": "com.owncloud"
+    },
+    "oidc": {
+      "issuer": "https://ocis.owncloud.test:9200",
+      "insecure": true
+    },
+    "policy_selector": {
+      "static": {
+        "policy": "reva"
+      }
+    },
+    "policies": [
+      {
+        "name": "reva",
+        "routes": [
+          {
+            "endpoint": "/",
+            "backend": "http://web.owncloud.test:9100"
+          },
+          {
+            "endpoint": "/.well-known/",
+            "backend": "http://ocis.owncloud.test:9130"
+          },
+          {
+            "endpoint": "/konnect/",
+            "backend": "http://ocis.owncloud.test:9130"
+          },
+          {
+            "endpoint": "/signin/",
+            "backend": "http://ocis.owncloud.test:9130"
+          },
+          {
+            "endpoint": "/ocs/",
+            "backend": "http://ocis.owncloud.test:9140"
+          },
+          {
+            "type": "regex",
+            "endpoint": "/ocs/v[12].php/cloud/user",
+            "backend": "http://ocis.owncloud.test:9110"
+          },
+          {
+            "endpoint": "/remote.php/",
+            "backend": "http://ocis.owncloud.test:9140"
+          },
+          {
+            "endpoint": "/dav/",
+            "backend": "http://ocis.owncloud.test:9140"
+          },
+          {
+            "endpoint": "/webdav/",
+            "backend": "http://ocis.owncloud.test:9140"
+          },
+          {
+            "endpoint": "/status.php",
+            "backend": "http://ocis.owncloud.test:9140"
+          },
+          {
+            "endpoint": "/index.php/",
+            "backend": "http://ocis.owncloud.test:9140"
+          },
+          {
+            "endpoint": "/data",
+            "backend": "http://ocis.owncloud.test:9140"
+          },
+          {
+            "endpoint": "/api/v0/accounts",
+            "backend": "http://ocis.owncloud.test:9181"
+          },
+          {
+            "endpoint": "/accounts.js",
+            "backend": "http://ocis.owncloud.test:9181"
+          },
+          {
+            "endpoint": "/api/v0/settings",
+            "backend":  "http://ocis.owncloud.test:9190"
+          },
+          {
+            "endpoint": "/settings.js",
+            "backend":  "http://ocis.owncloud.test:9190"
+      },
+      {
+            "endpoint": "/api/v0/greet",
+            "backend": "http://ocis.owncloud.test:9105"
+          },
+          {
+            "endpoint": "/hello.js",
+            "backend": "http://ocis.owncloud.test:9105"
+          }
+        ]
+      }
+    ]
+  }

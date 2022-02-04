@@ -6,8 +6,8 @@ services:
     image: traefik:v2.5
     networks:
       ocis-net:
-        aliases:
-          - ${OCIS_DOMAIN:-ocis.owncloud.test}
+    depends_on:
+      - proxy
     command:
       - "--log.level=${TRAEFIK_LOG_LEVEL:-ERROR}"
       # letsencrypt configuration
@@ -47,76 +47,77 @@ services:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
-  #     OCIS_COMMAND: server
+       #     OCIS_RUN_EXTENSIONS: settings,storage-metadata,graph,graph-explorer,ocs,store,thumbnails,web,webdav,storage-frontend,storage-gateway,storage-userprovider,storage-groupprovider,storage-authbasic,storage-authbearer,storage-authmachine,storage-users,storage-shares,storage-public-link,storage-appprovider,storage-sharing,proxy
+       #     OCIS_COMMAND: server
 
   #depends on storage-metadata
-  accounts:
-    # network_mode: host # fixes network issue
-    # network_mode: default
-    networks:
-      ocis-net:
-    extends:
-        file: docker-compose.base.yml
-        service: ocis
-    depends_on:
-      - storage-metadata
-    entrypoint:
-      - /bin/sh
-      - /entrypoint-override.wait.sh # requires SERVICE_PRECONDITION defined in environment
-    environment:
-      OCIS_COMMAND: accounts
-      SERVICE_PRECONDITION: "storage-metadata.owncloud.test:9215"
-      ACCOUNTS_LOG_LEVEL: "debug"
+  # accounts:
+  #   # network_mode: host # fixes network issue
+  #   # network_mode: default
+  #   networks:
+  #     ocis-net:
+  #   extends:
+  #       file: docker-compose.base.yml
+  #       service: ocis
+  #   depends_on:
+  #     - storage-metadata
+  #   entrypoint:
+  #     - /bin/sh
+  #     - /entrypoint-override.wait.sh # requires SERVICE_PRECONDITION defined in environment
+  #   environment:
+  #     OCIS_COMMAND: accounts
+  #     SERVICE_PRECONDITION: "storage-metadata.owncloud.test:9215"
+  #     ACCOUNTS_LOG_LEVEL: "debug"
 
-      # required to connect to storage-metadata service as a dependency
-      ACCOUNTS_STORAGE_CS3_PROVIDER_ADDR: "storage-metadata.owncloud.test:9215"
+  #     # required to connect to storage-metadata service as a dependency
+  #     ACCOUNTS_STORAGE_CS3_PROVIDER_ADDR: "storage-metadata.owncloud.test:9215"
 
-      # GRPC_GO_LOG_VERBOSITY_LEVEL: "99"
-      # GRPC_GO_LOG_SEVERITY_LEVEL: "info"
-      # STORAGE_METADATA_LOG_LEVEL: "debug"
-  storage-metadata:
-    # network_mode: host
-    # network_mode: default
-    networks:
-      ocis-net:
-        aliases:
-          - storage-metadata.owncloud.test
-    extends:
-        file: docker-compose.base.yml
-        service: ocis
-    depends_on:
-      - storage-gateway
-    entrypoint:
-      - /bin/sh
-      - /entrypoint-override.wait.sh # requires SERVICE_PRECONDITION defined in environment
-    ports:
-     - "9215:9215"
-    environment:
-      OCIS_COMMAND: storage-metadata
-      SERVICE_PRECONDITION: "storage-gateway.owncloud.test:9142"
+  #     # GRPC_GO_LOG_VERBOSITY_LEVEL: "99"
+  #     # GRPC_GO_LOG_SEVERITY_LEVEL: "info"
+  #     # STORAGE_METADATA_LOG_LEVEL: "debug"
+  # storage-metadata:
+  #   # network_mode: host
+  #   # network_mode: default
+  #   networks:
+  #     ocis-net:
+  #       aliases:
+  #         - storage-metadata.owncloud.test
+  #   extends:
+  #       file: docker-compose.base.yml
+  #       service: ocis
+  #   depends_on:
+  #     - storage-gateway
+  #   entrypoint:
+  #     - /bin/sh
+  #     - /entrypoint-override.wait.sh # requires SERVICE_PRECONDITION defined in environment
+  #   ports:
+  #    - "9215:9215"
+  #   environment:
+  #     OCIS_COMMAND: storage-metadata
+  #     SERVICE_PRECONDITION: "storage-gateway.owncloud.test:9142"
 
-      # required to connect to storage-gateway service as a dependency
-      REVA_GATEWAY: "storage-gateway.owncloud.test:9142"
+  #     # required to connect to storage-gateway service as a dependency
+  #     REVA_GATEWAY: "storage-gateway.owncloud.test:9142"
 
-      # GRPC_GO_LOG_VERBOSITY_LEVEL: "99"
-      # GRPC_GO_LOG_SEVERITY_LEVEL: "info"
-      # STORAGE_METADATA_LOG_LEVEL: "debug"
+  #     # GRPC_GO_LOG_VERBOSITY_LEVEL: "99"
+  #     # GRPC_GO_LOG_SEVERITY_LEVEL: "info"
+  #     # STORAGE_METADATA_LOG_LEVEL: "debug"
 
-      # required to allow accounts to access this service
-      STORAGE_METADATA_GRPC_PROVIDER_ADDR: "0.0.0.0:9215"
-  storage-gateway:
-    extends:
-        file: docker-compose.base.yml
-        service: ocis
-    networks:
-      ocis-net:
-        aliases:
-          - storage-gateway.owncloud.test
-    environment:
-      OCIS_COMMAND: storage-gateway
+  #     # required to allow accounts to access this service
+  #     STORAGE_METADATA_GRPC_PROVIDER_ADDR: "0.0.0.0:9215"
+  # storage-gateway:
+  #   extends:
+  #       file: docker-compose.base.yml
+  #       service: ocis
+  #   networks:
+  #     ocis-net:
+  #       aliases:
+  #         - storage-gateway.owncloud.test
+  #   environment:
+  #     OCIS_COMMAND: storage-gateway
 
-      # required to allow storage-metadata to access this service
-      STORAGE_GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
+  #     # required to allow storage-metadata to access this service
+  #     STORAGE_GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
   # glauth:
   #   # network_mode: default
   #   networks:
@@ -128,94 +129,161 @@ services:
   #     OCIS_COMMAND: glauth
   # # #graph
   # idp:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: idp
   # ocs:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: ocs
   # settings:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: settings
-  #   # # requires access to glauth and accounts
-  # #storage-app-provider
-  # #storage-groupprovider
-  # #storage-sharing
+    # # requires access to glauth and accounts
+  #storage-app-provider
+  #storage-groupprovider
+  #storage-sharing
   # storage-frontend:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: storage-frontend
   # storage-userprovider:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: storage-userprovider
   # storage-auth-basic:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: storage-auth-basic
   # storage-auth-bearer:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: storage-auth-bearer
   # storage-home:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: storage-home
   # storage-users:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: storage-users
   # storage-public-link:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: storage-public-link
   # store:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: store
   # thumbnails:
+  #   networks:
+  #     ocis-net:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: thumbnails
-  # web:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: web
-  # webdav:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: webdav
-  # proxy: # needed?
+  web:
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    networks:
+      ocis-int:
+        aliases:
+          - web.owncloud.test
+    environment:
+      # WEB_HTTP_ADDR: 0.0.0.0:9100
+      WEB_HTTP_ADDR: web.owncloud.test:9100
+      OCIS_COMMAND: web
+      # override config.json
+      WEB_UI_CONFIG: /config.json
+    entrypoint:
+      - /bin/sh
+      - /entrypoint-override.sh
+    ports:
+      - "9100:9100"
+  webdav:
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    environment:
+      OCIS_COMMAND: webdav
+  proxy:
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    networks:
+      ocis-net:
+        aliases:
+          - proxy-ext.owncloud.test
+      ocis-int:
+        aliases:
+          - proxy-int.owncloud.test
+    depends_on:
+      - web
+    environment:
+      # OCIS_URL: ocis.owncloud.test
+      PROXY_TLS: false
+      # see https://github.com/owncloud/ocis/pull/675 /etc/ocis/proxy.json
+      # PROXY_CONFIG_FILE: /proxy.json
+      PROXY_LOG_LEVEL: debug
+#      PROXY_CONFIG_FILE: "/var/tmp/ocis/.config/proxy-config.json"
+      OCIS_COMMAND: proxy
+      # PROXY_ENABLE_BASIC_AUTH: true
+      # WEB_UI_CONFIG: /config.json
+      # SERVICE_PRECONDITION: "ocis.owncloud.test:9100"
+      SERVICE_PRECONDITION: "web.owncloud.test:9100"
+    entrypoint:
+      - /bin/sh
+      - /entrypoint-override.wait.sh
+      # - /entrypoint-override.sh
+    ports:
+      - "9200:9200"
 
 volumes:
   certs:
@@ -224,7 +292,7 @@ volumes:
 networks:
   ocis-net:
     driver: "bridge"
+  ocis-int:
+
     # driver_opts:
       # com.docker.network.bridge.host_binding_ipv4: "1.2.3.4"
-    # aliases:
-    #   - ${OCIS_DOMAIN:-ocis.owncloud.test}
