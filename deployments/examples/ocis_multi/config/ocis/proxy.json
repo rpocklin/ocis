@@ -26,7 +26,7 @@
           },
           {
             "endpoint": "/.well-known/",
-            "backend": "http://ocis.owncloud.test:9130"
+            "backend": "http://idp.owncloud.test:9130"
           },
           {
             "endpoint": "/konnect/",
@@ -34,7 +34,7 @@
           },
           {
             "endpoint": "/signin/",
-            "backend": "http://ocis.owncloud.test:9130"
+            "backend": "http://idp.owncloud.test:9130"
           },
           {
             "endpoint": "/ocs/",

@@ -2,10 +2,23 @@
 version: "3.7"
 
 services:
+  # traefik:
+  #   networks:
+  #     ocis-net:
+  #       aliases:
+  #         - ${OCIS_DOMAIN:-ocis.owncloud.test}
+  #   depends_on:
+  #     - proxy
+  #   extends:
+  #       file: docker-compose.base.yml
+  #       service: traefik
+
   traefik:
     image: traefik:v2.5
     networks:
       ocis-net:
+        aliases:
+          - ${OCIS_DOMAIN:-ocis.owncloud.test}
     depends_on:
       - proxy
     command:
@@ -14,7 +27,7 @@ services:
       - "--certificatesResolvers.http.acme.email=${TRAEFIK_ACME_MAIL:-example@example.org}"
       - "--certificatesResolvers.http.acme.storage=/certs/acme.json"
       - "--certificatesResolvers.http.acme.httpChallenge.entryPoint=http"
-      # enable dashboard
+      # enable dasbhoard
       - "--api.dashboard=true"
       # define entrypoints
       - "--entryPoints.http.address=:80"
@@ -25,8 +38,8 @@ services:
       - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--providers.docker.exposedByDefault=false"
     ports:
-      - "80:80"
-      - "443:443"
+      - "80:80"   # redirects to 443
+      - "443:443" # main exposed port
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "certs:/certs"
@@ -41,6 +54,7 @@ services:
     logging:
       driver: "local"
     restart: always
+
 
   # ocis:
   #   extends:
@@ -121,7 +135,7 @@ services:
   # glauth:
   #   # network_mode: default
   #   networks:
-  #     ocis-net:
+  #     ocis-int:
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
@@ -129,13 +143,18 @@ services:
   #     OCIS_COMMAND: glauth
   # # #graph
   # idp:
+  #   ## TODO: depends on glauth????
   #   networks:
-  #     ocis-net:
+  #     ocis-int:
+  #       aliases:
+  #         - idp.owncloud.test
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   environment:
   #     OCIS_COMMAND: idp
+  #   ports:
+  #     - "9130:9130"
   # ocs:
   #   networks:
   #     ocis-net:
@@ -247,12 +266,12 @@ services:
       - /entrypoint-override.sh
     ports:
       - "9100:9100"
-  webdav:
-    extends:
-        file: docker-compose.base.yml
-        service: ocis
-    environment:
-      OCIS_COMMAND: webdav
+  # webdav:
+  #   extends:
+  #       file: docker-compose.base.yml
+  #       service: ocis
+  #   environment:
+  #     OCIS_COMMAND: webdav
   proxy:
     extends:
         file: docker-compose.base.yml
@@ -266,6 +285,7 @@ services:
           - proxy-int.owncloud.test
     depends_on:
       - web
+      # - idp
     environment:
       # OCIS_URL: ocis.owncloud.test
       PROXY_TLS: false
@@ -281,9 +301,16 @@ services:
     entrypoint:
       - /bin/sh
       - /entrypoint-override.wait.sh
-      # - /entrypoint-override.sh
     ports:
       - "9200:9200"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.proxy.entrypoints=https"
+      # maps based on domain from https --> ocis.owncloud.test:9200
+      - "traefik.http.routers.proxy.rule=Host(`${OCIS_DOMAIN:-ocis.owncloud.test}`)"
+      - "traefik.http.routers.proxy.tls.certresolver=http"
+      - "traefik.http.routers.proxy.service=proxy"
+      - "traefik.http.services.proxy.loadbalancer.server.port=9200"
 
 volumes:
   certs:

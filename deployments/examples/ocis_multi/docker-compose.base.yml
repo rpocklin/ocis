@@ -6,8 +6,6 @@ services:
     image: traefik:v2.5
     networks:
       ocis-net:
-        aliases:
-          - ${OCIS_DOMAIN:-ocis.owncloud.test}
     command:
       - "--log.level=${TRAEFIK_LOG_LEVEL:-ERROR}"
       # letsencrypt configuration
@@ -70,14 +68,6 @@ services:
       - ./config/ocis/entrypoint-override.wait.sh:/entrypoint-override.wait.sh
       - ./config/ocis/entrypoint-override.sh:/entrypoint-override.sh
       - ocis-data:/var/lib/ocis
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.ocis.entrypoints=https"
-      # maps based on domain from https --> ocis.owncloud.test:9200
-      - "traefik.http.routers.ocis.rule=Host(`${OCIS_DOMAIN:-ocis.owncloud.test}`)"
-      - "traefik.http.routers.ocis.tls.certresolver=http"
-      - "traefik.http.routers.ocis.service=ocis"
-      - "traefik.http.services.ocis.loadbalancer.server.port=9200"
     logging:
       driver: "local"
     restart: unless-stopped
