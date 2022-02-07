@@ -277,12 +277,12 @@ services:
         file: docker-compose.base.yml
         service: ocis
     networks:
-      ocis-net:
-        aliases:
-          - proxy-ext.owncloud.test
       ocis-int:
         aliases:
           - proxy-int.owncloud.test
+      ocis-net:
+        aliases:
+          - proxy-ext.owncloud.test
     depends_on:
       - web
       # - idp
@@ -311,15 +311,21 @@ services:
       - "traefik.http.routers.proxy.tls.certresolver=http"
       - "traefik.http.routers.proxy.service=proxy"
       - "traefik.http.services.proxy.loadbalancer.server.port=9200"
-
+      # IMPORTANT - otherwise it will bind to "ocis-int" (although it should not be able to)
+      - "traefik.docker.network=${COMPOSE_PROJECT_NAME}_ocis-net"
 volumes:
   certs:
   ocis-data:
 
 networks:
   ocis-net:
-    driver: "bridge"
+    ipam:
+      config:
+        - subnet: 172.177.0.0/16
+    # driver: "bridge"
   ocis-int:
-
+    ipam:
+      config:
+        - subnet: 10.103.0.1/16
     # driver_opts:
       # com.docker.network.bridge.host_binding_ipv4: "1.2.3.4"
