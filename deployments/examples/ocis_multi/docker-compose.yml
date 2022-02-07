@@ -132,29 +132,29 @@ services:
 
   #     # required to allow storage-metadata to access this service
   #     STORAGE_GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
-  # glauth:
-  #   # network_mode: default
-  #   networks:
-  #     ocis-int:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: glauth
-  # # #graph
-  # idp:
-  #   ## TODO: depends on glauth????
-  #   networks:
-  #     ocis-int:
-  #       aliases:
-  #         - idp.owncloud.test
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: idp
-  #   ports:
-  #     - "9130:9130"
+  glauth:
+    networks:
+      ocis-int:
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    environment:
+      OCIS_COMMAND: glauth
+  # #graph
+  idp:
+    ## TODO: depends on glauth????
+    networks:
+      ocis-int:
+        aliases:
+          - idp.owncloud.test
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    environment:
+      IDP_HTTP_ADDR: "0.0.0.0:9130"
+      OCIS_COMMAND: idp
+    ports:
+      - "9130:9130"
   # ocs:
   #   networks:
   #     ocis-net:
