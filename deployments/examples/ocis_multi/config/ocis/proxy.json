@@ -53,7 +53,7 @@
           {
             "type": "query",
             "endpoint": "/remote.php/?preview=1",
-            "backend": "http://localhost:9115"
+            "backend": "http://webdav.owncloud.test:9115"
           },
           {
             "endpoint": "/remote.php/",
@@ -89,23 +89,23 @@
           },
           {
             "endpoint": "/graph/",
-            "backend": "http://localhost:9120"
+            "backend": "http://graph-explorer.owncloud.test:9120"
           },
           {
             "endpoint": "/graph-explorer/",
-            "backend": "http://localhost:9135"
+            "backend": "http://graph-explorer.owncloud.test:9135"
           },
           {
             "endpoint": "/api/v0/accounts",
-            "backend": "http://ocis.owncloud.test:9181"
+            "backend": "http://accounts.owncloud.test:9181"
           },
           {
             "endpoint": "/api/v0/settings",
-            "backend":  "http://ocis.owncloud.test:9190"
+            "backend":  "http://settings.owncloud.test:9190"
           },
           {
             "endpoint": "/settings.js",
-            "backend":  "http://ocis.owncloud.test:9190"
+            "backend":  "http://settings.owncloud.test:9190"
           }
         ]
       }

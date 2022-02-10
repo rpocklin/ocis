@@ -70,6 +70,10 @@ services:
           - storage-frontend.owncloud.test
           - storage-gateway.owncloud.test
           - ocs.owncloud.test
+          - accounts.owncloud.test
+          - graph.owncloud.test
+          - graph-explorer.owncloud.test
+          - settings.owncloud.test
     extends:
         file: docker-compose.base.yml
         service: ocis
@@ -79,10 +83,17 @@ services:
       IDP_HTTP_ADDR: 0.0.0.0:9130   # matches proxy.json
       WEB_HTTP_ADDR: 0.0.0.0:9100   # matches proxy.json
       OCS_HTTP_ADDR: 0.0.0.0:9110   # matches proxy.json
-      STORAGE_FRONTEND_HTTP_ADDR: "0.0.0.0:9140"
-      STORAGE_GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
-      REVA_GATEWAY: "storage-gateway.owncloud.test:9142"
-      # STORAGE_METADATA_HTTP_ADDR: "0.0.0.0:"
+
+      STORAGE_FRONTEND_HTTP_ADDR: 0.0.0.0:9140 # needed? used in webdav
+      STORAGE_GATEWAY_GRPC_ADDR: 0.0.0.0:9142 # needed ?
+      REVA_GATEWAY: storage-gateway.owncloud.test:9142 # needed?
+
+      SETTINGS_HTTP_ADDR: 0.0.0.0:9190
+      ACCOUNTS_HTTP_ADDR: 0.0.0.0:9181
+      WEBDAV_HTTP_ADDR: 0.0.0.0:9115
+      GRAPH_HTTP_ADDR: 0.0.0.0:9120
+      GRAPH_EXPLORER_HTTP_ADDR: 0.0.0.0:9135
+      # STORAGE_METADATA_HTTP_ADDR: 0.0.0.0:9215
       # STORAGE_USERS_HTTP_ADDR
       # STORAGE_SHARES_HTTP_ADDR
       # ACCOUNTS_STORAGE_BACKEND: "cs3"
@@ -90,7 +101,6 @@ services:
       # STORAGE_METADATA_DATA_SERVER_URL: "http://storage-metadata.owncloud.test:9216" # for accounts
       # STORAGE_METADATA_HTTP_ADDR: "0.0.0.0:9216" # for accounts
       # STORAGE_METADATA_GRPC_PROVIDER_ADDR: "0.0.0.0:9215"
-      # SETTINGS_HTTP_ADDR: "0.0.0.0:9190"
     # ports:
     #   - "9130:9130"
     labels:
