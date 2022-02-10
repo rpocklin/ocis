@@ -56,13 +56,53 @@ services:
     restart: always
 
 
-  # ocis:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-       #     OCIS_RUN_EXTENSIONS: settings,storage-metadata,graph,graph-explorer,ocs,store,thumbnails,web,webdav,storage-frontend,storage-gateway,storage-userprovider,storage-groupprovider,storage-authbasic,storage-authbearer,storage-authmachine,storage-users,storage-shares,storage-public-link,storage-appprovider,storage-sharing,proxy
-       #     OCIS_COMMAND: server
+  ocis:
+    networks:
+      # ocis-int:
+      #   aliases:
+      #     - proxy-int.owncloud.test
+      ocis-net:
+        aliases:
+          - proxy-int.owncloud.test
+          - proxy-ext.owncloud.test
+          - idp.owncloud.test
+          - web.owncloud.test
+          - storage-frontend.owncloud.test
+          - storage-gateway.owncloud.test
+          - ocs.owncloud.test
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    environment:
+      # OCIS_RUN_EXTENSIONS: settings,storage-metadata,graph,graph-explorer,ocs,store,thumbnails,web,webdav,storage-frontend,storage-gateway,storage-userprovider,storage-groupprovider,storage-authbasic,storage-authbearer,storage-authmachine,storage-users,storage-shares,storage-public-link,storage-appprovider,storage-sharing,proxy
+      OCIS_COMMAND: server
+      IDP_HTTP_ADDR: 0.0.0.0:9130   # matches proxy.json
+      WEB_HTTP_ADDR: 0.0.0.0:9100   # matches proxy.json
+      OCS_HTTP_ADDR: 0.0.0.0:9110   # matches proxy.json
+      STORAGE_FRONTEND_HTTP_ADDR: "0.0.0.0:9140"
+      STORAGE_GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
+      REVA_GATEWAY: "storage-gateway.owncloud.test:9142"
+      # STORAGE_METADATA_HTTP_ADDR: "0.0.0.0:"
+      # STORAGE_USERS_HTTP_ADDR
+      # STORAGE_SHARES_HTTP_ADDR
+      # ACCOUNTS_STORAGE_BACKEND: "cs3"
+      # ACCOUNTS_STORAGE_CS3_PROVIDER_ADDR: "storage-metadata.owncloud.test:9215"
+      # STORAGE_METADATA_DATA_SERVER_URL: "http://storage-metadata.owncloud.test:9216" # for accounts
+      # STORAGE_METADATA_HTTP_ADDR: "0.0.0.0:9216" # for accounts
+      # STORAGE_METADATA_GRPC_PROVIDER_ADDR: "0.0.0.0:9215"
+      # SETTINGS_HTTP_ADDR: "0.0.0.0:9190"
+    # ports:
+    #   - "9130:9130"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.proxy.entrypoints=https"
+      # maps based on domain from https --> ocis.owncloud.test:9200
+      - "traefik.http.routers.proxy.rule=Host(`${OCIS_DOMAIN:-ocis.owncloud.test}`)"
+      - "traefik.http.routers.proxy.tls.certresolver=http"
+      - "traefik.http.routers.proxy.service=proxy"
+      - "traefik.http.services.proxy.loadbalancer.server.port=9200"
+      # IMPORTANT - otherwise it will bind to "ocis-int" (although it should not be able to)
+      - "traefik.docker.network=${COMPOSE_PROJECT_NAME}_ocis-net"
 
   #depends on storage-metadata
   # accounts:
@@ -132,200 +172,202 @@ services:
 
   #     # required to allow storage-metadata to access this service
   #     STORAGE_GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
-  glauth:
-    networks:
-      ocis-int:
-    extends:
-        file: docker-compose.base.yml
-        service: ocis
-    environment:
-      OCIS_COMMAND: glauth
-  # #graph
-  idp:
-    ## TODO: depends on glauth????
-    networks:
-      ocis-int:
-        aliases:
-          - idp.owncloud.test
-    extends:
-        file: docker-compose.base.yml
-        service: ocis
-    environment:
-      IDP_HTTP_ADDR: "0.0.0.0:9130"
-      OCIS_COMMAND: idp
-    ports:
-      - "9130:9130"
-  # ocs:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: ocs
-  # settings:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: settings
-    # # requires access to glauth and accounts
-  #storage-app-provider
-  #storage-groupprovider
-  #storage-sharing
-  # storage-frontend:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: storage-frontend
-  # storage-userprovider:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: storage-userprovider
-  # storage-auth-basic:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: storage-auth-basic
-  # storage-auth-bearer:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: storage-auth-bearer
-  # storage-home:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: storage-home
-  # storage-users:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: storage-users
-  # storage-public-link:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: storage-public-link
-  # store:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: store
-  # thumbnails:
-  #   networks:
-  #     ocis-net:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: thumbnails
-  web:
-    extends:
-        file: docker-compose.base.yml
-        service: ocis
-    networks:
-      ocis-int:
-        aliases:
-          - web.owncloud.test
-    environment:
-      # WEB_HTTP_ADDR: 0.0.0.0:9100
-      WEB_HTTP_ADDR: web.owncloud.test:9100
-      OCIS_COMMAND: web
-      # override config.json
-      WEB_UI_CONFIG: /config.json
-    entrypoint:
-      - /bin/sh
-      - /entrypoint-override.sh
-    ports:
-      - "9100:9100"
-  # webdav:
-  #   extends:
-  #       file: docker-compose.base.yml
-  #       service: ocis
-  #   environment:
-  #     OCIS_COMMAND: webdav
-  proxy:
-    extends:
-        file: docker-compose.base.yml
-        service: ocis
-    networks:
-      ocis-int:
-        aliases:
-          - proxy-int.owncloud.test
-      ocis-net:
-        aliases:
-          - proxy-ext.owncloud.test
-    depends_on:
-      - web
-      # - idp
-    environment:
-      # OCIS_URL: ocis.owncloud.test
-      PROXY_TLS: false
-      # see https://github.com/owncloud/ocis/pull/675 /etc/ocis/proxy.json
-      # PROXY_CONFIG_FILE: /proxy.json
-      PROXY_LOG_LEVEL: debug
-#      PROXY_CONFIG_FILE: "/var/tmp/ocis/.config/proxy-config.json"
-      OCIS_COMMAND: proxy
-      # PROXY_ENABLE_BASIC_AUTH: true
-      # WEB_UI_CONFIG: /config.json
-      # SERVICE_PRECONDITION: "ocis.owncloud.test:9100"
-      SERVICE_PRECONDITION: "web.owncloud.test:9100"
-    entrypoint:
-      - /bin/sh
-      - /entrypoint-override.wait.sh
-    ports:
-      - "9200:9200"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.proxy.entrypoints=https"
-      # maps based on domain from https --> ocis.owncloud.test:9200
-      - "traefik.http.routers.proxy.rule=Host(`${OCIS_DOMAIN:-ocis.owncloud.test}`)"
-      - "traefik.http.routers.proxy.tls.certresolver=http"
-      - "traefik.http.routers.proxy.service=proxy"
-      - "traefik.http.services.proxy.loadbalancer.server.port=9200"
-      # IMPORTANT - otherwise it will bind to "ocis-int" (although it should not be able to)
-      - "traefik.docker.network=${COMPOSE_PROJECT_NAME}_ocis-net"
+#   glauth:
+#     networks:
+#       ocis-int:
+#     extends:
+#         file: docker-compose.base.yml
+#         service: ocis
+#     environment:
+#       OCIS_COMMAND: glauth
+#   # #graph
+#   idp:
+#     ## TODO: depends on glauth????
+#     networks:
+#       ocis-int:
+#         aliases:
+#           - idp.owncloud.test
+#     extends:
+#         file: docker-compose.base.yml
+#         service: ocis
+#     environment:
+#       IDP_HTTP_ADDR: "0.0.0.0:9130"
+#       OCIS_COMMAND: idp
+#     ports:
+#       - "9130:9130"
+#   # ocs:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: ocs
+#   settings:
+#     networks:
+#       ocis-net:
+#     extends:
+#         file: docker-compose.base.yml
+#         service: ocis
+#     environment:
+#       SETTINGS_HTTP_ADDR: "0.0.0.0:9190"
+#       SETTINGS_GRPC_ADDR: "0.0.0.0:9191"
+#       OCIS_COMMAND: settings server
+#     # # requires access to glauth and accounts
+#   #storage-app-provider
+#   #storage-groupprovider
+#   #storage-sharing
+#   # storage-frontend:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: storage-frontend
+#   # storage-userprovider:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: storage-userprovider
+#   # storage-auth-basic:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: storage-auth-basic
+#   # storage-auth-bearer:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: storage-auth-bearer
+#   # storage-home:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: storage-home
+#   # storage-users:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: storage-users
+#   # storage-public-link:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: storage-public-link
+#   # store:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: store
+#   # thumbnails:
+#   #   networks:
+#   #     ocis-net:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: thumbnails
+#   web:
+#     extends:
+#         file: docker-compose.base.yml
+#         service: ocis
+#     networks:
+#       ocis-int:
+#         aliases:
+#           - web.owncloud.test
+#     environment:
+#       # WEB_HTTP_ADDR: 0.0.0.0:9100
+#       WEB_HTTP_ADDR: web.owncloud.test:9100
+#       OCIS_COMMAND: web server
+#       # override config.json
+#       WEB_UI_CONFIG: /config.json
+#     entrypoint:
+#       - /bin/sh
+#       - /entrypoint-override.sh
+#     ports:
+#       - "9100:9100"
+#   # webdav:
+#   #   extends:
+#   #       file: docker-compose.base.yml
+#   #       service: ocis
+#   #   environment:
+#   #     OCIS_COMMAND: webdav
+#   proxy:
+#     extends:
+#         file: docker-compose.base.yml
+#         service: ocis
+#     networks:
+#       ocis-int:
+#         aliases:
+#           - proxy-int.owncloud.test
+#       ocis-net:
+#         aliases:
+#           - proxy-ext.owncloud.test
+#     depends_on:
+#       - web
+#       # - idp
+#     environment:
+#       # OCIS_URL: ocis.owncloud.test
+#       PROXY_TLS: false
+#       # see https://github.com/owncloud/ocis/pull/675 /etc/ocis/proxy.json
+#       # PROXY_CONFIG_FILE: /proxy.json
+#       PROXY_LOG_LEVEL: debug
+# #      PROXY_CONFIG_FILE: "/var/tmp/ocis/.config/proxy-config.json"
+#       OCIS_COMMAND: proxy server
+#       # PROXY_ENABLE_BASIC_AUTH: true
+#       # WEB_UI_CONFIG: /config.json
+#       # SERVICE_PRECONDITION: "ocis.owncloud.test:9100"
+#       SERVICE_PRECONDITION: "web.owncloud.test:9100"
+#     entrypoint:
+#       - /bin/sh
+#       - /entrypoint-override.wait.sh
+#     ports:
+#       - "9200:9200"
+#     labels:
+#       - "traefik.enable=true"
+#       - "traefik.http.routers.proxy.entrypoints=https"
+#       # maps based on domain from https --> ocis.owncloud.test:9200
+#       - "traefik.http.routers.proxy.rule=Host(`${OCIS_DOMAIN:-ocis.owncloud.test}`)"
+#       - "traefik.http.routers.proxy.tls.certresolver=http"
+#       - "traefik.http.routers.proxy.service=proxy"
+#       - "traefik.http.services.proxy.loadbalancer.server.port=9200"
+#       # IMPORTANT - otherwise it will bind to "ocis-int" (although it should not be able to)
+#       - "traefik.docker.network=${COMPOSE_PROJECT_NAME}_ocis-net"
 volumes:
   certs:
   ocis-data:
 
 networks:
   ocis-net:
-    ipam:
-      config:
-        - subnet: 172.177.0.0/16
-    # driver: "bridge"
-  ocis-int:
-    ipam:
-      config:
-        - subnet: 10.103.0.1/16
+  #   ipam:
+  #     config:
+  #       - subnet: 172.177.0.0/16
+  #   # driver: "bridge"
+  # ocis-int:
+  #   ipam:
+  #     config:
+  #       - subnet: 10.103.0.1/16
     # driver_opts:
       # com.docker.network.bridge.host_binding_ipv4: "1.2.3.4"

@@ -13,12 +13,12 @@
     },
     "policy_selector": {
       "static": {
-        "policy": "reva"
+        "policy": "ocis"
       }
     },
     "policies": [
       {
-        "name": "reva",
+        "name": "ocis",
         "routes": [
           {
             "endpoint": "/",
@@ -30,51 +30,73 @@
           },
           {
             "endpoint": "/konnect/",
-            "backend": "http://ocis.owncloud.test:9130"
+            "backend": "http://idp.owncloud.test:9130"
           },
           {
             "endpoint": "/signin/",
             "backend": "http://idp.owncloud.test:9130"
           },
           {
-            "endpoint": "/ocs/",
-            "backend": "http://ocis.owncloud.test:9140"
+            "type": "regex",
+            "endpoint": "/ocs/v[12].php/cloud/user/signing-key",
+            "backend": "http://ocs.owncloud.test:9110"
           },
           {
             "type": "regex",
             "endpoint": "/ocs/v[12].php/cloud/user",
-            "backend": "http://ocis.owncloud.test:9110"
+            "backend": "http://ocs.owncloud.test:9110"
+          },
+          {
+            "endpoint": "/ocs/",
+            "backend": "http://storage-frontend.owncloud.test:9140"
+          },
+          {
+            "type": "query",
+            "endpoint": "/remote.php/?preview=1",
+            "backend": "http://localhost:9115"
           },
           {
             "endpoint": "/remote.php/",
-            "backend": "http://ocis.owncloud.test:9140"
+            "backend": "http://storage-frontend.owncloud.test:9140"
           },
           {
             "endpoint": "/dav/",
-            "backend": "http://ocis.owncloud.test:9140"
+            "backend": "http://storage-frontend.owncloud.test:9140"
           },
           {
             "endpoint": "/webdav/",
-            "backend": "http://ocis.owncloud.test:9140"
+            "backend": "http://storage-frontend.owncloud.test:9140"
           },
           {
             "endpoint": "/status.php",
-            "backend": "http://ocis.owncloud.test:9140"
+            "backend": "http://storage-frontend.owncloud.test:9140"
           },
           {
             "endpoint": "/index.php/",
-            "backend": "http://ocis.owncloud.test:9140"
+            "backend": "http://storage-frontend.owncloud.test:9140"
+          },
+          {
+            "endpoint": "/app/",
+            "backend": "http://storage-frontend.owncloud.test:9140"
+          },
+          {
+            "endpoint": "/archiver",
+            "backend": "http://storage-frontend.owncloud.test:9140"
           },
           {
             "endpoint": "/data",
-            "backend": "http://ocis.owncloud.test:9140"
+            "backend": "http://storage-frontend.owncloud.test:9140"
+          },
+          {
+            "endpoint": "/graph/",
+            "backend": "http://localhost:9120"
+          },
+          {
+            "endpoint": "/graph-explorer/",
+            "backend": "http://localhost:9135"
           },
           {
             "endpoint": "/api/v0/accounts",
-            "backend": "http://ocis.owncloud.test:9181"
-          },
-          {
-            "endpoint": "/accounts.js",
             "backend": "http://ocis.owncloud.test:9181"
           },
           {
@@ -84,14 +106,6 @@
           {
             "endpoint": "/settings.js",
             "backend":  "http://ocis.owncloud.test:9190"
-      },
-      {
-            "endpoint": "/api/v0/greet",
-            "backend": "http://ocis.owncloud.test:9105"
-          },
-          {
-            "endpoint": "/hello.js",
-            "backend": "http://ocis.owncloud.test:9105"
           }
         ]
       }

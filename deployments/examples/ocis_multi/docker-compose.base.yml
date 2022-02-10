@@ -43,7 +43,7 @@ services:
   ocis:
     image: owncloud/ocis:${OCIS_DOCKER_TAG:-latest}
     networks:
-      ocis-int:
+      ocis-net:
     # entrypoint:
     #   - /bin/sh
     #   - /entrypoint-override.sh
