@@ -60,8 +60,8 @@ services:
       # INSECURE: needed if oCIS / Traefik is using self generated certificates
       OCIS_INSECURE: "${INSECURE:-false}"
     volumes:
-      # - ./config/ocis/config.json:/config.json
-      - ./config/ocis/proxy.json:/etc/ocis/proxy.json
+      - ./config/ocis/config.json:/etc/ocis/config.json
+      - ./config/ocis/proxy.json:/etc/ocis/proxy.json # this is the default location, otherwise you need to specify PROXY_CONFIG_FILE
       - ./config/ocis/entrypoint-override.sh:/entrypoint-override.sh
       - ./config/ocis/entrypoint-override.wait.sh:/entrypoint-override.wait.sh
       - ./wait-for-it.sh:/wait-for-it.sh
