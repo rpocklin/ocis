@@ -8,7 +8,7 @@ services:
         aliases:
           - ${OCIS_DOMAIN:-ocis.owncloud.test}
     depends_on:
-      - proxy
+      - web
     extends:
         file: docker-compose.base.yml
         service: traefik
@@ -23,15 +23,13 @@ services:
           - storage-gateway.owncloud.test
           - ocs.owncloud.test
           - accounts.owncloud.test
-          - graph.owncloud.test
-          - graph-explorer.owncloud.test
           - settings.owncloud.test
           - webdav.owncloud.test
     extends:
         file: docker-compose.base.yml
         service: ocis
     environment:
-      OCIS_RUN_EXTENSIONS: accounts, glauth, graph, graph-explorer, idp, ocs, proxy, settings, storage-appprovider, storage-authbasic, storage-authbearer, storage-auth-machine, storage-frontend, storage-gateway, storage-groupprovider, storage-metadata, storage-public-link, storage-shares, storage-sharing, storage-userprovider, storage-users, store, thumbnails, webdav
+      OCIS_RUN_EXTENSIONS: accounts, glauth, idp, ocs, proxy, settings, storage-appprovider, storage-authbasic, storage-authbearer, storage-auth-machine, storage-frontend, storage-gateway, storage-groupprovider, storage-metadata, storage-public-link, storage-shares, storage-sharing, storage-userprovider, storage-users, store, thumbnails, webdav
       # settings,storage-metadata,graph,graph-explorer,ocs,store,thumbnails,web,webdav,storage-frontend,storage-gateway,storage-userprovider,storage-groupprovider,storage-authbasic,storage-authbearer,storage-authmachine,storage-users,storage-shares,storage-public-link,storage-appprovider,storage-sharing,proxy
       OCIS_COMMAND: server
       IDP_HTTP_ADDR: 0.0.0.0:9130
@@ -40,8 +38,6 @@ services:
       SETTINGS_HTTP_ADDR: 0.0.0.0:9190
       ACCOUNTS_HTTP_ADDR: 0.0.0.0:9181
       WEBDAV_HTTP_ADDR: 0.0.0.0:9115
-      GRAPH_HTTP_ADDR: 0.0.0.0:9120
-      GRAPH_EXPLORER_HTTP_ADDR: 0.0.0.0:9135
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.proxy.entrypoints=https"
@@ -54,6 +50,8 @@ services:
       - "traefik.docker.network=${COMPOSE_PROJECT_NAME}_ocis-net"
 
   web:
+    depends_on:
+      - ocis
     extends:
         file: docker-compose.base.yml
         service: ocis
@@ -62,32 +60,80 @@ services:
         aliases:
           - web.owncloud.test
     environment:
+      OCIS_RUN_EXTENSIONS: web
+      OCIS_COMMAND: server
+
       WEB_HTTP_ADDR: web.owncloud.test:9100
-      OCIS_COMMAND: web server
       # override config.json
       WEB_UI_CONFIG: /etc/ocis/config.json
     entrypoint:
       - /bin/sh
       - /entrypoint-override.sh
     ports:
-      - "9100:9100"
+      - 9100:9100
 
-  # web:
+  # webdav:
+  #   depends_on:
+  #     - ocis
   #   extends:
   #       file: docker-compose.base.yml
   #       service: ocis
   #   networks:
   #     ocis-int:
   #       aliases:
-  #         - web.owncloud.test
+  #         - webdav.owncloud.test
   #   environment:
-  #     WEB_HTTP_ADDR: web.owncloud.test:9100
-  #     OCIS_COMMAND: accounts
+  #     OCIS_RUN_EXTENSIONS: webdav
+  #     OCIS_COMMAND: server
+
+  #     WEBDAV_HTTP_ADDR: webdav.owncloud.test:9115
   #   entrypoint:
   #     - /bin/sh
   #     - /entrypoint-override.sh
   #   ports:
-  #     - "9100:9100"
+  #     - 9115:9115
+
+  graph:
+    depends_on:
+      - ocis
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    networks:
+      ocis-int:
+        aliases:
+          - graph.owncloud.test
+    environment:
+      OCIS_RUN_EXTENSIONS: graph
+      OCIS_COMMAND: server
+
+      GRAPH_HTTP_ADDR: graph.owncloud.test:9120
+    entrypoint:
+      - /bin/sh
+      - /entrypoint-override.sh
+    ports:
+      - 9120:9120
+
+  graph-explorer:
+    depends_on:
+      - ocis
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    networks:
+      ocis-int:
+        aliases:
+          - graph-explorer.owncloud.test
+    environment:
+      OCIS_RUN_EXTENSIONS: graph-explorer
+      OCIS_COMMAND: server
+
+      GRAPH_EXPLORER_HTTP_ADDR: graph-explorer.owncloud.test:9135
+    entrypoint:
+      - /bin/sh
+      - /entrypoint-override.sh
+    ports:
+      - 9135:9135
 
 volumes:
   certs:
