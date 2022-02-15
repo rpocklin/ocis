@@ -18,12 +18,9 @@ services:
 
   ocis:
     networks:
-      ocis-net:
       ocis-int:
         aliases:
           - idp.owncloud.test
-          - storage-frontend.owncloud.test
-          - storage-gateway.owncloud.test
           - ocs.owncloud.test
           - accounts.owncloud.test
           - settings.owncloud.test
@@ -32,47 +29,82 @@ services:
         file: docker-compose.base.yml
         service: ocis
     environment:
+      # try STORAGE_GATEWAY_DISABLE_HOME_CREATION_ON_LOGIN=true
     # doesn't work if OCS is first
-      OCIS_RUN_EXTENSIONS: accounts, glauth, idp, settings, ocs, storage-appprovider, storage-authbasic, storage-authbearer, storage-auth-machine, storage-frontend, storage-gateway, storage-groupprovider, storage-metadata, storage-public-link, storage-shares, storage-sharing, storage-userprovider, storage-users, store, thumbnails, webdav
+
+
+    ## GLAUTH cannot access accounts???
+      OCIS_RUN_EXTENSIONS: accounts, glauth, idp, settings, ocs, store, thumbnails, webdav
+      # OCIS_RUN_EXTENSIONS: accounts, glauth, idp, settings, ocs, storage-appprovider, storage-authbasic, storage-authbearer, storage-auth-machine, storage-frontend, storage-gateway, storage-groupprovider, storage-metadata, storage-public-link, storage-shares, storage-sharing, storage-userprovider, storage-users, store, thumbnails, webdav
+      # separate webdav, storage, auth (accounts/glauth/idp/settings)
       # settings,storage-metadata,graph,graph-explorer,ocs,store,thumbnails,web,webdav,storage-frontend,storage-gateway,storage-userprovider,storage-groupprovider,storage-authbasic,storage-authbearer,storage-authmachine,storage-users,storage-shares,storage-public-link,storage-appprovider,storage-sharing,proxy
+      
+      GLAUTH_LDAP_ADDR: 0.0.0.0:9125 # needed when storage is separate to GLAUTH service
+      GLAUTH_LDAPS_ADDR: 0.0.0.0:9126  # needed when storage is separate to GLAUTH service
+      IDP_LOG_LEVEL: debug
+      GLAUTH_LOG_LEVEL: debug
+      ACCOUNTS_LOG_LEVEL: debug
+      # IDP_LDAP_URI: ldap://0.0.0.0:9125 # needed so IDP can talk to glauth (ldap)
       OCIS_COMMAND: server
       IDP_HTTP_ADDR: 0.0.0.0:9130
       OCS_HTTP_ADDR: 0.0.0.0:9110
       WEBDAV_HTTP_ADDR: 0.0.0.0:9115
-      ACCOUNTS_HTTP_ADDR: 0.0.0.0:9181
-      ACCOUNTS_GRPC_ADDR: 0.0.0.0:9180
-      STORAGE_FRONTEND_HTTP_ADDR: 0.0.0.0:9140
-      STORAGE_GATEWAY_GRPC_ADDR: 0.0.0.0:9142
-      REVA_GATEWAY: storage-gateway.owncloud.test:9142
-      SETTINGS_HTTP_ADDR: 0.0.0.0:9190
-      SETTINGS_GRPC_ADDR: 0.0.0.0:9191 # ocs depends on this
+      # ACCOUNTS_HTTP_ADDR: 0.0.0.0:9181
+      # ACCOUNTS_GRPC_ADDR: 0.0.0.0:9180
+      # REVA_GATEWAY: storage-gateway.owncloud.test:9142
+      # SETTINGS_HTTP_ADDR: 0.0.0.0:9190
+      # SETTINGS_GRPC_ADDR: 0.0.0.0:9191 # ocs depends on this
       WEBDAV_LOG_LEVEL: debug
 
-      # it's referencing storage 127.0.0.1 for something.... ?
+      # needed for accounts to talk to storage-metadata
+      ACCOUNTS_REPO_CS3_PROVIDER_ADDR: storage-metadata.owncloud.test:9215 # valid ?
+      ACCOUNTS_STORAGE_CS3_PROVIDER_ADDR: storage-metadata.owncloud.test:9215
+      ACCOUNTS_STORAGE_BACKEND: cs3
+      STORAGE_METADATA_GRPC_PROVIDER_ADDR: storage-metadata-owncloud.test:9215 # needed for idp to talk to storage-metadata
 
-      STORAGE_METADATA_GRPC_ADDR: 0.0.0.0:9215 # for accounts
-      STORAGE_METADATA_HTTP_ADDR: 0.0.0.0:9216 # ERROR
+      # STORAGE_METADATA_GRPC_ADDR: 0.0.0.0:9215 # for accounts
+      # STORAGE_METADATA_HTTP_ADDR: 0.0.0.0:9216 # ERROR
       # STORAGE_METADATA_GRPC_PROVIDER_ADDR: 0.0.0.0:9215 accounts?
       # STORAGE_METADATA_PORT_HTTP_ADDR: 0.0.0.0:9216
       # STORAGE_METADATA_PORT_GRPC_ADDR: 0.0.0.0:9215
-      STORAGE_METADATA_DRIVER: ocis # default
+      # STORAGE_METADATA_DRIVER: ocis # default
       # STORAGE_METADATA_ROOT: '/tmp'
-      # ACCOUNTS_STORAGE_BACKEND: cs3
-      # ACCOUNTS_STORAGE_CS3_PROVIDER_ADDR: storage-metadata.owncloud.test:9215
-
-    # labels:
-    #   - "traefik.enable=true"
-    #   - "traefik.http.routers.proxy.entrypoints=https"
-    #   # maps based on domain from https --> ocis.owncloud.test:9200
-    #   - "traefik.http.routers.proxy.rule=Host(`${OCIS_DOMAIN:-ocis.owncloud.test}`)"
-    #   - "traefik.http.routers.proxy.tls.certresolver=http"
-    #   - "traefik.http.routers.proxy.service=proxy"
-    #   - "traefik.http.services.proxy.loadbalancer.server.port=9200"
-    #   # IMPORTANT - otherwise it will bind to "ocis-int"
-    #   - "traefik.docker.network=${COMPOSE_PROJECT_NAME}_ocis-net"
     ports:
-      - 9140:9140 # for remote.php (storage frontend)
+      - 9125:9125
+      - 9130:9130
+      - 9110:9110
+      - 9115:9115
+
+  storage:
+    networks:
+      ocis-int:
+        aliases:
+          - storage-frontend.owncloud.test
+          - storage-gateway.owncloud.test
+          - storage-metadata.owncloud.test
+    extends:
+        file: docker-compose.base.yml
+        service: ocis
+    environment:
+    # doesn't work if OCS is first
+      OCIS_RUN_EXTENSIONS: storage-appprovider, storage-authbasic, storage-authbearer, storage-auth-machine, storage-frontend, storage-gateway, storage-groupprovider, storage-metadata, storage-public-link, storage-shares, storage-sharing, storage-userprovider, storage-users
+      # OCIS_RUN_EXTENSIONS: accounts, glauth, idp, settings, ocs, storage-appprovider, storage-authbasic, storage-authbearer, storage-auth-machine, storage-frontend, storage-gateway, storage-groupprovider, storage-metadata, storage-public-link, storage-shares, storage-sharing, storage-userprovider, storage-users, store, thumbnails, webdav
+      # separate webdav, storage, auth (accounts/glauth/idp/settings)
+      # settings,storage-metadata,graph,graph-explorer,ocs,store,thumbnails,web,webdav,storage-frontend,storage-gateway,storage-userprovider,storage-groupprovider,storage-authbasic,storage-authbearer,storage-authmachine,storage-users,storage-shares,storage-public-link,storage-appprovider,storage-sharing,proxy
+      OCIS_COMMAND: server
+      STORAGE_FRONTEND_HTTP_ADDR: 0.0.0.0:9140
+      STORAGE_GATEWAY_GRPC_ADDR: 0.0.0.0:9142
+      REVA_GATEWAY: storage-gateway.owncloud.test:9142
+
+      # PR raised to rename this to STORAGE_METADATA_GRPC_ADDR: https://github.com/owncloud/ocis/pull/3169
+      STORAGE_METADATA_GRPC_PROVIDER_ADDR: 0.0.0.0:9215
+      STORAGE_METADATA_HTTP_ADDR: 0.0.0.0:9216 # ERROR
+      STORAGE_METADATA_DRIVER: ocis # default
+    ports:
+      - 9140:9140 # for proxy /remote.php/ (storage-frontend)
       - 9142:9142 # reva, for ocs
+      - 9215:9215
+      - 9216:9216
 
   proxy:
     extends:
